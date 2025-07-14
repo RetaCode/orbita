@@ -1,0 +1,13 @@
+# Go
+/bin/
+/pkg/
+*.exe
+
+# Node
+node_modules/
+.next/
+.env
+.DS_Store
+
+# Logs
+*.log
