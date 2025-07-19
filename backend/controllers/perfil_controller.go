@@ -6,6 +6,7 @@ import (
 
 	"backend/config"
 	"backend/middleware"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,13 +17,11 @@ func ActualizarPerfil(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido o no autorizado"})
 		return
 	}
-	
+
 	var datos struct {
-		Nombre       string `json:"nombre"`
-		Apodo1       string `json:"apodo1"`
-		Apodo2       string `json:"apodo2"`
-		Preferencias string `json:"preferencias"`
-		EstadoAnimo  string `json:"estado_animo"`
+		Nombre            string `json:"nombre"`
+		Preferencias      string `json:"preferencias"`
+		EstadoAnimoActual string `json:"estado_animo_actual"`
 	}
 
 	if err := c.ShouldBindJSON(&datos); err != nil {
@@ -31,13 +30,13 @@ func ActualizarPerfil(c *gin.Context) {
 	}
 
 	query := `
-		UPDATE usuarios
-		SET nombre = $1, apodo1 = $2, apodo2 = $3, preferencias = $4, estado_animo = $5
-		WHERE id = $6
+		UPDATE usuario
+		SET nombre = $1, preferencias = $2, estado_animo_actual = $3
+		WHERE id_usuario = $4
 	`
 
 	_, err = config.DB.Exec(context.Background(), query,
-		datos.Nombre, datos.Apodo1, datos.Apodo2, datos.Preferencias, datos.EstadoAnimo, userID)
+		datos.Nombre, datos.Preferencias, datos.EstadoAnimoActual, userID)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar el perfil"})

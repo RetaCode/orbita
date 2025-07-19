@@ -1,99 +1,15 @@
 package controllers
 
 import (
+	"backend/config"
+	"backend/models/dtos"
+	"backend/models/entities"
+	"backend/utils"
 	"context"
 	"net/http"
 
-	"backend/config"
-	"backend/utils"
 	"github.com/gin-gonic/gin"
 )
-
-// UpdateProfile actualiza el perfil del usuario autenticado
-func UpdateProfile(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "No se pudo identificar el usuario"})
-		return
-	}
-
-	var data struct {
-		Nombre       string `json:"nombre"`
-		Apodo1       string `json:"apodo1"`
-		Apodo2       string `json:"apodo2"`
-		Preferencias string `json:"preferencias"`
-		EstadoAnimo  string `json:"estado_animo"`
-	}
-
-	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
-		return
-	}
-
-	query := `
-		UPDATE usuarios SET 
-			nombre = $1,
-			apodo1 = $2,
-			apodo2 = $3,
-			preferencias = $4,
-			estado_animo = $5
-		WHERE id = $6
-	`
-
-	_, err := config.DB.Exec(context.Background(), query,
-		data.Nombre, data.Apodo1, data.Apodo2, data.Preferencias, data.EstadoAnimo, userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar el perfil"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Perfil actualizado correctamente"})
-}
-
-// GetUsuarios devuelve todos los usuarios (demo)
-func GetUsuarios(c *gin.Context) {
-	rows, err := config.DB.Query(context.Background(), "SELECT id, correo, nombre FROM usuarios")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener usuarios"})
-		return
-	}
-	defer rows.Close()
-
-	var usuarios []map[string]interface{}
-	for rows.Next() {
-		var id int
-		var correo, nombre string
-
-		if err := rows.Scan(&id, &correo, &nombre); err != nil {
-			continue
-		}
-
-		usuarios = append(usuarios, map[string]interface{}{
-			"id":     id,
-			"correo": correo,
-			"nombre": nombre,
-		})
-	}
-
-	c.JSON(http.StatusOK, usuarios)
-}
-
-// GetPerfil devuelve el perfil del usuario autenticado
-func GetPerfil(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido o expirado"})
-		return
-	}
-
-	correo, _ := c.Get("correo")
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Acceso permitido al perfil 🔐",
-		"user_id": userID,
-		"correo":  correo,
-	})
-}
 
 // Register permite crear un nuevo usuario
 func Register(c *gin.Context) {
@@ -114,15 +30,19 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	_, err = config.DB.Exec(context.Background(),
-		"INSERT INTO usuarios (correo, nombre, contrasena) VALUES ($1, $2, $3)",
-		data.Correo, data.Nombre, hashed)
+	var userID int
+	err = config.DB.QueryRow(context.Background(),
+		"INSERT INTO usuario (correo, nombre, contraseña) VALUES ($1, $2, $3) RETURNING id_usuario",
+		data.Correo, data.Nombre, hashed).Scan(&userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo registrar el usuario"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Usuario registrado correctamente"})
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Usuario registrado correctamente",
+		"user_id": userID,
+	})
 }
 
 // Login autentica a un usuario y genera un token JWT
@@ -137,27 +57,73 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	var id int
-	var hashedPassword string
-
+	var usuario entities.Usuario
 	err := config.DB.QueryRow(context.Background(),
-		"SELECT id, contrasena FROM usuarios WHERE correo = $1", data.Correo).
-		Scan(&id, &hashedPassword)
+		"SELECT id_usuario, correo, nombre, contraseña FROM usuario WHERE correo = $1", data.Correo).
+		Scan(&usuario.IDUsuario, &usuario.Correo, &usuario.Nombre, &usuario.Contrasena)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciales inválidas"})
 		return
 	}
 
-	if !utils.CheckPasswordHash(data.Contrasena, hashedPassword) {
+	if !utils.CheckPasswordHash(data.Contrasena, usuario.Contrasena) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Contraseña incorrecta"})
 		return
 	}
 
-	token, err := utils.GenerateToken(id, data.Correo)
+	token, err := utils.GenerateToken(usuario.IDUsuario, usuario.Correo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generando token"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	// Limpiar contraseña antes de enviar
+	usuario.Contrasena = ""
+
+	c.JSON(http.StatusOK, dtos.AuthResponse{
+		Token:   token,
+		Usuario: usuario,
+	})
+}
+
+// GetUsuarios devuelve todos los usuarios (demo)
+func GetUsuarios(c *gin.Context) {
+	rows, err := config.DB.Query(context.Background(), "SELECT id_usuario, correo, nombre FROM usuario")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener usuarios"})
+		return
+	}
+	defer rows.Close()
+
+	var usuarios []entities.Usuario
+	for rows.Next() {
+		var usuario entities.Usuario
+		if err := rows.Scan(&usuario.IDUsuario, &usuario.Correo, &usuario.Nombre); err != nil {
+			continue
+		}
+		usuarios = append(usuarios, usuario)
+	}
+
+	c.JSON(http.StatusOK, usuarios)
+}
+
+// GetPerfil devuelve el perfil del usuario autenticado
+func GetPerfil(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido o expirado"})
+		return
+	}
+
+	var usuario entities.Usuario
+	err := config.DB.QueryRow(context.Background(),
+		"SELECT id_usuario, correo, nombre, preferencias, estado_animo_actual FROM usuario WHERE id_usuario = $1", userID).
+		Scan(&usuario.IDUsuario, &usuario.Correo, &usuario.Nombre, &usuario.Preferencias, &usuario.EstadoAnimoActual)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error obteniendo perfil"})
+		return
+	}
+
+	c.JSON(http.StatusOK, usuario)
 }
