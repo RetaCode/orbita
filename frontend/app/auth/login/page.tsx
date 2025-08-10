@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import AuthForm from "@/app/components/AuthForm";
-import { AnimatedWrapper } from "@/app/components/AnimatedWrapper";
+import AuthForm from "@/components/reg-log/AuthForm";
+import { AnimatedWrapper } from "@/components/reg-log/AnimatedWrapper";
 import Image from "next/image";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";

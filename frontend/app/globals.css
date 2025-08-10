@@ -3,6 +3,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* frontend/app/globals.css */
+
+.event-day {
+  position: relative;
+}
+
+.event-day::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: hsl(var(--primary)); /* Usa tu color primario de Tailwind */
+  bottom: 6px; /* Ajusta la posición vertical del punto */
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import ExpandedRegisterForm from "@/app/components/ExpandedRegisterForm";
-import { AnimatedWrapper } from "@/app/components/AnimatedWrapper";
+import ExpandedRegisterForm from "@/components/reg-log/ExpandedRegisterForm";
+import { AnimatedWrapper } from "@/components/reg-log/AnimatedWrapper";
 import Image from "next/image";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
