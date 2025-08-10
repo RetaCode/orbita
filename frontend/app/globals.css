@@ -15,8 +15,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: hsl(var(--primary)); /* Usa tu color primario de Tailwind */
-  bottom: 6px; /* Ajusta la posición vertical del punto */
+  background-color: hsl(var(--primary));
+  bottom: 6px;
   left: 50%;
   transform: translateX(-50%);
 }
