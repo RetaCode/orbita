@@ -6,9 +6,14 @@ import { AnimatedWrapper } from "@/app/components/AnimatedWrapper";
 import Image from "next/image";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
+import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 
 
 export default function RegisterPage() {
+  const router = useRouter();
+
   return (
     <AnimatedWrapper>
       <div className="relative min-h-screen flex flex-col md:flex-row bg-[#F1F5F9] overflow-hidden">
@@ -154,25 +159,34 @@ export default function RegisterPage() {
           <div className="w-full max-w-xl">
             <ExpandedRegisterForm
               type="register"
-              onSubmit={() => {
-                import('sweetalert2').then((Swal) => {
-                  Swal.default.fire({
+              onSubmit={async (data: any) => {
+                try {
+                  await api.register({ correo: data.email, contrasena: data.password, nombre: data.nombre });
+                  await Swal.fire({
                     icon: 'success',
                     title: '¡Registro exitoso!',
                     text: 'Tu cuenta fue creada correctamente.',
                     confirmButtonColor: '#1E3A8A',
                   })
-                })
+                  router.push('/auth/login')
+                } catch (err: any) {
+                  Swal.fire({
+                    icon: 'error',
+                    title: 'No se pudo registrar',
+                    text: err?.message || 'Intenta nuevamente.',
+                    confirmButtonColor: '#DC2626',
+                  })
+                }
               }}
             />
           </div>
           <div className="mt-6 text-center text-sm text-gray-600">
             <p className="mb-3">O Registrate con:</p>
             <div className="flex justify-center gap-4">
-              <button className="border px-4 py-2 rounded-md flex items-center gap-2 shadow hover:shadow-md transition">
+              <button className="border px-4 py-2 rounded-md flex items-center gap-2 shadow hover:shadow-md transition" onClick={() => Swal.fire({ icon: 'info', title: 'Próximamente', text: 'Registro con Google aún no está configurado.' })}>
                 <Image src="/Google__G__logo.svg.webp" alt="Google" width={20} height={20} /> Google
               </button>
-              <button className="border px-4 py-2 rounded-md flex items-center gap-2 shadow hover:shadow-md transition">
+              <button className="border px-4 py-2 rounded-md flex items-center gap-2 shadow hover:shadow-md transition" onClick={() => Swal.fire({ icon: 'info', title: 'Próximamente', text: 'Registro con GitHub aún no está configurado.' })}>
                 <Image src="/Octicons-mark-github.svg.png" alt="GitHub" width={20} height={20} /> GitHub
               </button>
             </div>
