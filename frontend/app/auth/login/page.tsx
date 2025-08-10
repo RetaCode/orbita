@@ -6,10 +6,13 @@ import { AnimatedWrapper } from "@/app/components/AnimatedWrapper";
 import Image from "next/image";
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
-import ExpandedRegisterForm from "@/app/components/ExpandedRegisterForm";
 import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   return (
     <AnimatedWrapper>
       <div className="relative min-h-screen flex flex-col md:flex-row bg-[#F1F5F9] overflow-hidden">
@@ -37,25 +40,56 @@ export default function LoginPage() {
           <h2 className="text-5xl font-bold text-center text-[#1E3A8A] mb-4">
             Bienvenido a Órbita
           </h2>
-          <AuthForm type="login" 
-          onSubmit={() => {
-                import('sweetalert2').then((Swal) => {
-                  Swal.default.fire({
-                    icon: 'success',
-                    title: '¡Registro exitoso!',
-                    text: 'Tu cuenta fue creada correctamente.',
-                    confirmButtonColor: '#1E3A8A',
-                  })
-                })
-              }}
+          <AuthForm
+            type="login"
+            onSubmit={async (email: string, password: string) => {
+              try {
+                const data = await api.login(email, password);
+                if (data?.token) {
+                  localStorage.setItem("authToken", data.token);
+                }
+                await Swal.fire({
+                  icon: "success",
+                  title: "¡Has iniciado sesión!",
+                  text: "Bienvenido de nuevo.",
+                  confirmButtonColor: "#1E3A8A",
+                });
+                router.push("/");
+              } catch (err: any) {
+                Swal.fire({
+                  icon: "error",
+                  title: "No se pudo iniciar sesión",
+                  text: err?.message || "Intenta nuevamente.",
+                  confirmButtonColor: "#DC2626",
+                });
+              }
+            }}
           />
           <div className="mt-6 text-center text-sm text-gray-600">
             <p className="mb-3">O inicia sesión con:</p>
             <div className="flex justify-center gap-4">
-              <button className="border px-4 py-2 rounded-md flex items-center gap-2 shadow hover:shadow-md transition">
+              <button
+                className="border px-4 py-2 rounded-md flex items-center gap-2 shadow hover:shadow-md transition"
+                onClick={() =>
+                  Swal.fire({
+                    icon: "info",
+                    title: "Próximamente",
+                    text: "Login con Google aún no está configurado.",
+                  })
+                }
+              >
                 <Image src="/Google__G__logo.svg.webp" alt="Google" width={20} height={20} /> Google
               </button>
-              <button className="border px-4 py-2 rounded-md flex items-center gap-2 shadow hover:shadow-md transition">
+              <button
+                className="border px-4 py-2 rounded-md flex items-center gap-2 shadow hover:shadow-md transition"
+                onClick={() =>
+                  Swal.fire({
+                    icon: "info",
+                    title: "Próximamente",
+                    text: "Login con GitHub aún no está configurado.",
+                  })
+                }
+              >
                 <Image src="/Octicons-mark-github.svg.png" alt="GitHub" width={20} height={20} /> GitHub
               </button>
             </div>
