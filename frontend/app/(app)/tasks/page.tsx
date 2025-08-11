@@ -1,4 +1,3 @@
-// frontend/app/(app)/tasks/page.tsx
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -6,7 +5,7 @@ import { TaskList } from '@/components/tasks/TaskList';
 import { TasksToolbar } from '@/components/tasks/TasksToolbar';
 import { api } from '@/lib/api';
 import type { TaskData } from '@/lib/mock-data';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,7 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState('todas');
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [form, setForm] = useState<{ titulo: string; fecha: string; prioridad: 'baja'|'media'|'alta'|'critica'; descripcion?: string }>({ titulo: '', fecha: '', prioridad: 'media' });
+  const [form, setForm] = useState<{ titulo: string; fecha_vencimiento: string; prioridad: 'baja'|'media'|'alta'|'critica'; descripcion?: string }>({ titulo: '', fecha_vencimiento: '', prioridad: 'media' });
 
   const reload = async () => {
     try {
@@ -46,12 +45,13 @@ export default function TasksPage() {
         titulo: form.titulo,
         descripcion: form.descripcion || '',
         prioridad: form.prioridad,
-        estado: 'pendiente',
       };
-      if (form.fecha) body.fecha_vencimiento = form.fecha; // backend acepta date
-      await api.post('/api/tareas', body);
+      if (form.fecha_vencimiento) {
+        body.fecha_vencimiento = new Date(form.fecha_vencimiento).toISOString();
+      }
+      await api.createTask(body);
       setIsOpen(false);
-      setForm({ titulo: '', fecha: '', prioridad: 'media' });
+      setForm({ titulo: '', fecha_vencimiento: '', prioridad: 'media' });
       await reload();
       Swal.fire({ icon: 'success', title: 'Tarea creada', timer: 1200, showConfirmButton: false });
     } catch (e: any) {
@@ -81,7 +81,7 @@ export default function TasksPage() {
             </div>
             <div>
               <label className="block text-sm font-medium">Fecha de vencimiento</label>
-              <Input type="date" value={form.fecha} onChange={(e) => setForm(v => ({ ...v, fecha: e.target.value }))} />
+              <Input type="date" value={form.fecha_vencimiento} onChange={(e) => setForm(v => ({ ...v, fecha_vencimiento: e.target.value }))} />
             </div>
             <div>
               <label className="block text-sm font-medium">Prioridad</label>
