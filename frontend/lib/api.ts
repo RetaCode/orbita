@@ -1,41 +1,77 @@
-export type LoginResponse = {
-  token: string
-  usuario: any
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem('authToken');
+  } catch {
+    return null;
+  }
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080'
+async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> | undefined),
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
-async function handleResponse<T>(res: Response): Promise<T> {
-  const contentType = res.headers.get('content-type') || ''
-  const isJson = contentType.includes('application/json')
-  const body = isJson ? await res.json().catch(() => ({})) : await res.text().catch(() => '')
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+    credentials: 'omit',
+  });
 
   if (!res.ok) {
-    const message = isJson ? (body?.error || body?.message) : body
-    throw new Error(message || `Error ${res.status}`)
+    const text = await res.text().catch(() => '');
+    throw new Error(text || `Request failed with status ${res.status}`);
   }
 
-  return body as T
+  // Try parse JSON, allow empty
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return (await res.json()) as T;
+  }
+  return undefined as unknown as T;
 }
 
 export const api = {
-  baseUrl: API_BASE_URL,
-
-  async login(correo: string, contrasena: string): Promise<LoginResponse> {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+  login: async (email: string, password: string) => {
+    // Backend espera { correo, contrasena }
+    return apiFetch<{ token: string; usuario: any }>(`/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ correo, contrasena }),
-    })
-    return handleResponse<LoginResponse>(res)
+      body: JSON.stringify({ correo: email, contrasena: password }),
+    });
   },
 
-  async register(params: { correo: string; contrasena: string; nombre: string }): Promise<{ message: string; user_id?: number }> {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+  register: async (params: { correo: string; nombre: string; contrasena: string }) => {
+    return apiFetch<{ message: string; user_id: number }>(`/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
-    })
-    return handleResponse(res)
+    });
   },
-}
+
+  getProfile: async () => {
+    return apiFetch(`/api/perfil`, { method: 'GET' });
+  },
+
+  getTasks: async () => {
+    return apiFetch(`/api/tareas`, { method: 'GET' });
+  },
+
+  getGroups: async () => {
+    return apiFetch(`/api/grupos`, { method: 'GET' });
+  },
+
+  post: async <T>(path: string, body?: unknown) => {
+    return apiFetch<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
+  },
+  get: async <T>(path: string) => apiFetch<T>(path, { method: 'GET' }),
+  put: async <T>(path: string, body?: unknown) => {
+    return apiFetch<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined });
+  },
+  delete: async <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
+};

@@ -1,13 +1,31 @@
 // frontend/app/(app)/groups/page.tsx
 'use client';
 import { motion } from 'framer-motion';
-import { userGroupsData } from '@/lib/mock-data';
+import { useEffect, useState } from 'react';
 import { GroupsToolbar } from '@/components/groups/GroupsToolbar';
 import { GroupCard } from '@/components/groups/GroupCard';
+import { api } from '@/lib/api';
+
+interface GrupoApi {
+  id_grupo: number;
+  nombre: string;
+  descripcion?: string;
+  id_creador?: number;
+}
 
 export default function GroupsPage() {
-  // Ya no necesitamos generar números aleatorios aquí
-  const groups = userGroupsData;
+  const [groups, setGroups] = useState<GrupoApi[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.getGroups();
+        setGroups(Array.isArray(data) ? data : []);
+      } catch {
+        setGroups([]);
+      }
+    })();
+  }, []);
 
   return (
     <motion.div
@@ -24,9 +42,19 @@ export default function GroupsPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
           >
-            <GroupCard group={group} />
+            {/* Adaptamos a la interfaz esperada por GroupCard con placeholders */}
+            <GroupCard group={{
+              id_grupo: group.id_grupo,
+              nombre: group.nombre,
+              total_miembros: 1,
+              total_tareas: 0,
+              members: [{ id: group.id_creador || 0, name: 'Tú', avatarUrl: 'https://github.com/shadcn.png', rolEnGrupo: 'Creador' }],
+            }} />
           </motion.div>
         ))}
+        {groups.length === 0 && (
+          <div className="col-span-full text-sm text-muted-foreground border rounded-lg p-6">No hay grupos disponibles.</div>
+        )}
       </div>
     </motion.div>
   );
