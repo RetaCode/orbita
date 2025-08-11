@@ -1,11 +1,32 @@
+'use client';
 // frontend/components/home/GroupsSummary.tsx
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { ArrowRight, Users, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { userGroupsData } from '@/lib/mock-data';
+import { api } from '@/lib/api';
+
+interface Grupo {
+  id_grupo: number;
+  nombre: string;
+  descripcion?: string;
+}
 
 export function GroupsSummary() {
+  const [groups, setGroups] = useState<Grupo[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.getGroups();
+        setGroups(Array.isArray(data) ? data : []);
+      } catch {
+        setGroups([]);
+      }
+    })();
+  }, []);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -17,7 +38,7 @@ export function GroupsSummary() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {userGroupsData.map((group) => (
+          {groups.map((group) => (
             <Link 
               href={`/groups/${group.id_grupo}`} 
               key={group.id_grupo}
@@ -28,11 +49,14 @@ export function GroupsSummary() {
               </div>
               <div className="flex-grow">
                 <p className="font-semibold text-sm leading-tight">{group.nombre}</p>
-                <p className="text-xs text-muted-foreground">{group.total_miembros} miembros</p>
+                {group.descripcion && <p className="text-xs text-muted-foreground line-clamp-1">{group.descripcion}</p>}
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground ml-auto" />
             </Link>
           ))}
+          {groups.length === 0 && (
+            <p className="text-sm text-muted-foreground">No perteneces a ningún grupo todavía.</p>
+          )}
         </div>
       </CardContent>
     </Card>

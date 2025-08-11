@@ -1,12 +1,13 @@
 // frontend/components/ui/navbar.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, User, LayoutDashboard, Settings, Moon, Sun } from 'lucide-react';
 import clsx from 'clsx';
+import { api } from '@/lib/api';
 
 const navLinks = [
   { href: '/home', label: 'Home' },
@@ -16,18 +17,35 @@ const navLinks = [
   { href: '/timer', label: 'Focus Timer' },
 ];
 
-const userData = {
-  name: 'Ricardo',
-  email: 'ricardo@ejemplo.com',
-  avatarUrl: 'https://github.com/shadcn.png',
-};
-
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
   const [theme, setTheme] = useState('light'); 
+  const [name, setName] = useState('Usuario');
+  const [email, setEmail] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('https://github.com/shadcn.png');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const profile: any = await api.getProfile();
+        if (profile?.nombre) setName(profile.nombre);
+        if (profile?.correo) setEmail(profile.correo);
+        if (profile?.avatar) setAvatarUrl(profile.avatar);
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('authToken');
+    } catch {}
+    router.replace('/auth/login');
+  }
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -84,7 +102,7 @@ export function Navbar() {
               className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
               <img
-                src={userData.avatarUrl}
+                src={avatarUrl}
                 alt="Avatar del usuario"
                 className="h-8 w-8 rounded-full border-2 border-border"
               />
@@ -101,8 +119,8 @@ export function Navbar() {
                 >
                   <div className="p-2">
                     <div className="border-b border-border pb-2 mb-2">
-                      <p className="font-semibold text-sm">{userData.name}</p>
-                      <p className="text-xs text-muted-foreground">{userData.email}</p>
+                      <p className="font-semibold text-sm">{name}</p>
+                      <p className="text-xs text-muted-foreground">{email}</p>
                     </div>
                     <Link href="/profile" className="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-md hover:bg-muted">
                       <User className="h-4 w-4" /> Perfil
@@ -114,9 +132,9 @@ export function Navbar() {
                       <Settings className="h-4 w-4" /> Configuración
                     </Link>
                     <div className="border-t border-border pt-2 mt-2">
-                      <Link href="/auth/logout" className="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-md hover:bg-muted text-destructive">
+                      <button onClick={handleLogout} className="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded-md hover:bg-muted text-destructive">
                         <LogOut className="h-4 w-4" /> Cerrar Sesión
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </motion.div>

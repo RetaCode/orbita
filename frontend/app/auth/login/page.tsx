@@ -10,21 +10,22 @@ import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
-// import { api } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      console.log('Login con:', email, password);
-      // const data = await api.login(email, password);
-      // localStorage.setItem("authToken", data.token);
+      const data = await api.login(email, password);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("authToken", data.token);
+      }
       await Swal.fire({
         icon: 'success',
         title: '¡Sesión Iniciada!',
         text: 'Bienvenido de nuevo.',
-        timer: 1500,
+        timer: 1200,
         showConfirmButton: false,
       });
       router.push('/home');
@@ -32,7 +33,7 @@ export default function LoginPage() {
       Swal.fire({
         icon: 'error',
         title: 'Error al iniciar sesión',
-        text: 'Credenciales incorrectas.',
+        text: err?.message || 'Credenciales incorrectas.',
       });
     }
   };

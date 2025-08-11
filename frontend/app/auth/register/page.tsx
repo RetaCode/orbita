@@ -9,25 +9,36 @@ import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
 
   const handleRegister = async (data: any) => {
-    console.log("Registering with:", data);
-    // Aquí iría tu lógica de API para registrar al usuario
-    await Swal.fire({
-      icon: 'success',
-      title: '¡Registro Exitoso!',
-      text: 'Tu cuenta ha sido creada. Ahora, inicia sesión.',
-    });
-    router.push('/auth/login'); // Redirige a la página de login
+    try {
+      await api.register({
+        correo: data.email,
+        nombre: data.nombre || data.apodo || 'Usuario',
+        contrasena: data.password,
+      });
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Registro Exitoso!',
+        text: 'Tu cuenta ha sido creada. Ahora, inicia sesión.',
+      });
+      router.push('/auth/login');
+    } catch (err: any) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'No se pudo registrar',
+        text: err?.message || 'Intenta nuevamente.',
+      });
+    }
   };
 
   return (
     <AnimatedWrapper>
       <div className="relative min-h-screen flex flex-col md:flex-row bg-[#F1F5F9] overflow-hidden">
-        
         {/* --- COLUMNA IZQUIERDA (ANIMACIONES) --- */}
         <div className="relative hidden md:flex w-1/2 items-center justify-center bg-[#000020]">
           <Particles
@@ -75,10 +86,7 @@ export default function RegisterPage() {
           <div className="flex justify-center mb-8">
             <Image src="/logo-orbita.png" alt="Logo de Órbita" width={120} height={120} className="rounded-full" />
           </div>
-          
-          {/* Usamos el formulario de registro avanzado que recuperaste */}
           <RegisterForm type="register" onSubmit={handleRegister} />
-          
           <div className="mt-6 text-center text-sm text-gray-600">
             ¿Ya tienes una cuenta?{" "}
             <Link href="/auth/login" className="text-[#3B82F6] hover:underline">
