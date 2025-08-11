@@ -8,9 +8,10 @@ import { PlusCircle } from 'lucide-react';
 interface TasksToolbarProps {
   onStatusChange: (status: string) => void;
   onPriorityChange: (priority: string) => void;
+  onNewTask?: () => void;
 }
 
-export function TasksToolbar({ onStatusChange, onPriorityChange }: TasksToolbarProps) {
+export function TasksToolbar({ onStatusChange, onPriorityChange, onNewTask }: TasksToolbarProps) {
   return (
     <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
       <div>
@@ -43,7 +44,7 @@ export function TasksToolbar({ onStatusChange, onPriorityChange }: TasksToolbarP
           </SelectContent>
         </Select>
 
-        <Button>
+        <Button onClick={onNewTask}>
           <PlusCircle className="mr-2 h-4 w-4" /> Nueva Tarea
         </Button>
       </div>

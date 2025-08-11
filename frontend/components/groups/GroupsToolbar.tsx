@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { PlusCircle, LogIn } from 'lucide-react';
 
-export function GroupsToolbar() {
+export function GroupsToolbar({ onCreate, onJoin }: { onCreate?: () => void; onJoin?: () => void }) {
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
       <div>
@@ -12,10 +12,10 @@ export function GroupsToolbar() {
         <p className="text-muted-foreground">Tus espacios de trabajo colaborativo.</p>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline">
+        <Button variant="outline" onClick={onJoin}>
           <LogIn className="mr-2 h-4 w-4" /> Unirse a un Grupo
         </Button>
-        <Button>
+        <Button onClick={onCreate}>
           <PlusCircle className="mr-2 h-4 w-4" /> Crear Grupo
         </Button>
       </div>
