@@ -138,3 +138,67 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* --- Estilos Personalizados para FullCalendar --- */
+
+/* Contenedor principal */
+.fc {
+  border: none !important; /* Elimina el borde por defecto */
+}
+
+/* Encabezado (Mes, Semana, Día) */
+.fc .fc-toolbar.fc-header-toolbar {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* Botones de navegación y vistas */
+.fc .fc-button {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: background-color 0.2s;
+}
+
+.fc .fc-button:hover {
+  background-color: hsl(var(--accent)) !important;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Título (ej. "Agosto 2025") */
+.fc .fc-toolbar-title {
+  font-size: 1.25rem !important;
+  font-weight: 600;
+}
+
+/* Celdas de los días */
+.fc .fc-daygrid-day {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Eventos en el calendario */
+.fc-event {
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  font-weight: 500;
+  padding: 4px 6px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.fc-event:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Día de hoy */
+.fc .fc-day-today {
+  background-color: hsl(var(--accent)) !important;
+}
