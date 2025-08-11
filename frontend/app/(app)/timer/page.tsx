@@ -1,25 +1,24 @@
 // frontend/app/(app)/timer/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, RefreshCw, Plus } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 import { useAudio } from 'react-use';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { clsx } from 'clsx';
-import { tasksData } from '@/lib/mock-data';
 import type { TaskData } from '@/lib/mock-data';
 import { SessionTaskList } from '@/components/timer/SessionTaskList';
+import { api } from '@/lib/api';
 
 const MODES = {
   pomodoro: { id: 'pomodoro', label: 'Pomodoro', duration: 25 * 60 },
   shortBreak: { id: 'shortBreak', label: 'Descanso Corto', duration: 5 * 60 },
   longBreak: { id: 'longBreak', label: 'Descanso Largo', duration: 15 * 60 },
-  timebox: { id: 'timebox', label: 'Timeboxing', duration: 0 }, // El tiempo se define por tarea
+  timebox: { id: 'timebox', label: 'Timeboxing', duration: 0 },
 };
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak' | 'timebox';
@@ -34,17 +33,14 @@ export default function FocusTimerPage() {
 
   const [sessionTasks, setSessionTasks] = useState<Task[]>([]);
   const [currentTaskId, setCurrentTaskId] = useState<number | null>(null);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
 
-  const [audio, state, controls] = useAudio({
-    src: '/notification.mp3',
-  });
+  const [audio, state, controls] = useAudio({ src: '/notification.mp3' });
 
   const currentTask = sessionTasks.find(t => t.id_tarea === currentTaskId);
 
   const getDuration = useCallback(() => {
     if (mode === 'timebox') {
-      if (!currentTask) return 15 * 60; // Default de 15 min si no hay tarea
+      if (!currentTask) return 15 * 60;
       switch (currentTask.prioridad) {
         case 'critica': return 25 * 60;
         case 'alta': return 45 * 60;
@@ -53,10 +49,10 @@ export default function FocusTimerPage() {
         default: return 30 * 60;
       }
     }
-    return MODES[mode as keyof typeof DURATION_CONFIG].duration;
+    return DURATION_CONFIG[mode];
   }, [mode, currentTask]);
   
-  const DURATION_CONFIG = {
+  const DURATION_CONFIG: Record<'pomodoro'|'shortBreak'|'longBreak', number> = {
     pomodoro: 25 * 60,
     shortBreak: 5 * 60,
     longBreak: 15 * 60,
@@ -106,17 +102,22 @@ export default function FocusTimerPage() {
 
   const progress = timeLeft > 0 ? 1 - (timeLeft / getDuration()) : 1;
 
-  const importTasks = () => {
-    const tasksToImport = tasksData
-      .filter(mainTask => !sessionTasks.some(sessionTask => sessionTask.id_tarea === mainTask.id_tarea))
-      .slice(0, 3);
-    setSessionTasks([...sessionTasks, ...tasksToImport]);
-    toast.info(`${tasksToImport.length} tareas importadas.`);
+  const importTasks = async () => {
+    try {
+      const data = (await api.getTasks()) as any[];
+      const toImport = (Array.isArray(data) ? data : [])
+        .filter(mainTask => !sessionTasks.some(sessionTask => sessionTask.id_tarea === mainTask.id_tarea))
+        .slice(0, 5);
+      setSessionTasks([...sessionTasks, ...toImport]);
+      toast.info(`${toImport.length} tareas importadas.`);
+    } catch {
+      toast.error('No se pudieron cargar las tareas');
+    }
   };
 
   return (
     <>
-      {audio} {/* <-- ¡AQUÍ ESTÁ LA LÍNEA QUE FALTABA! */}
+      {audio}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <motion.div 
           className="lg:col-span-2"

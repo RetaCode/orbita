@@ -27,6 +27,8 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import type { PerfilData } from '@/lib/mock-data';
+import { api } from '@/lib/api';
+import Swal from 'sweetalert2';
 
 interface ProfileHeaderProps {
   user: Pick<PerfilData, 'nombre' | 'correo' | 'avatar'>;
@@ -62,7 +64,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
               Realiza cambios en tu perfil aquí. Haz clic en guardar cuando termines.
             </DialogDescription>
           </DialogHeader>
-          <ProfileForm user={user} />
+          <ProfileForm user={user} onSaved={() => setOpen(false)} />
         </DialogContent>
       </Dialog>
     );
@@ -94,7 +96,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
           </DrawerDescription>
         </DrawerHeader>
         <div className="p-4">
-          <ProfileForm user={user} />
+          <ProfileForm user={user} onSaved={() => setOpen(false)} />
         </div>
         <DrawerFooter className="pt-2">
           <DrawerClose asChild>
@@ -107,15 +109,22 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
 }
 
 // Componente interno para no duplicar el código del formulario
-function ProfileForm({ user }: { user: Pick<PerfilData, 'nombre'> }) {
+function ProfileForm({ user, onSaved }: { user: Pick<PerfilData, 'nombre'>; onSaved: () => void }) {
   const [editedName, setEditedName] = useState(user.nombre);
 
-  const handleSaveChanges = () => {
-    console.log("Guardando nuevo nombre:", editedName);
+  const handleSaveChanges = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.put('/api/perfil', { nombre: editedName });
+      await Swal.fire({ icon: 'success', title: 'Perfil actualizado', timer: 1200, showConfirmButton: false });
+      onSaved();
+    } catch (e: any) {
+      Swal.fire({ icon: 'error', title: 'No se pudo actualizar', text: e?.message || 'Intenta nuevamente' });
+    }
   };
 
   return (
-    <form className="grid items-start gap-4">
+    <form className="grid items-start gap-4" onSubmit={handleSaveChanges}>
       <div className="grid gap-2">
         <Label htmlFor="name">Nombre</Label>
         <Input
@@ -124,7 +133,7 @@ function ProfileForm({ user }: { user: Pick<PerfilData, 'nombre'> }) {
           onChange={(e) => setEditedName(e.target.value)}
         />
       </div>
-      <Button type="submit" onClick={handleSaveChanges}>Guardar Cambios</Button>
+      <Button type="submit">Guardar Cambios</Button>
     </form>
   );
 }
